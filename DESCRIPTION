@@ -1,11 +1,11 @@
 Package: AdancedR.notes
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Sven's notes on 'Advanced R' by Hadley Wickham
 Version: 0.1.0
-Author: Who wrote it
+Author: Sven Halvorson
 Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Just trying to get better at R. Making notes and testing things
+in the environment seems better than just reading the book.
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true

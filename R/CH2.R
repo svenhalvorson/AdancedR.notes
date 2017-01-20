@@ -247,30 +247,30 @@ x3 <- array(1:5,c(5,1,1))
 ## 2.4 ###
 ##########
 
-#Data frames are probably most important data type for statistically minded people.
-#At their heart, they are lists of equal length vectors. They respond to colnames, 
-#rownames, and length() is the number of columns
-df = data.frame(x=1:3,y=c("Aphrodite","Hestia","Poseidon"))
-#it's a list
+#Data frames are probably the most important data type for statistically minded peeps
+#They're essentially a list of equal length vectors. They have the attributes colnames, rownames
+
+df = data.frame(x=1:3,y=letters[1:3])
 is.list(df)
-#and its class is data.frame. I think there is a section later in the book about how classes differ
-#from data types
 class(df)
+#So this is saying that the data type is not the same as the class. I think there is a section on
+#classes later
 
-#The book mentions a plyr funtion, rbind.fill, which allows for differing column names. This has been
-#a problem for me in the past so let's see if we can get it to work
-library(plyr)
-df2 = data.frame(x=4:5,z=c("Anubis","Ra"))
+#The book mentions a plyr function : rbind.fill() which can accomidate data frames with different
+#columns. This has been a problem for me in the past. Let's see if we can get it to work.
+
+library("plyr")
+df2 = data.frame(x=4:5,z=c("Zeus","Aphrodite"))
 rbind.fill(df,df2)
-#niceee
+#thats nice
 
-#it is possible to have the elements of a column be lists themselves but they cannot be sent to the 
+#it is possible to have the elements of a column be lists themselves but they cannot be sent to the
 #data.frame function.
 df2$lists = list(1:3,letters[14:15])
 df2
 
 #We can make a data frame with a column of lists by using the I function which
-#inhibits interpretation or conversion of objects. The data.frame function wants to 
+#inhibits interpretation or conversion of objects. The data.frame function wants to
 #create columns out of the elements of a list but we can do this to stop it.
 
 df3 = data.frame(x=1:3,z = I(list(1:3,3:2,letters[1:3])))
@@ -321,5 +321,5 @@ nullframe = data.frame()
 
 #5. Can you have a list that is a matrix? Can you have a data frame have a column that is a matrix?
 
-#Yes to both. The elements of a list can be of any data type. A data frame can have columns that consist of 
+#Yes to both. The elements of a list can be of any data type. A data frame can have columns that consist of
 #matrices however you will need to use the I() function when initializing
