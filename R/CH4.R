@@ -436,4 +436,133 @@ round(model$coefficients, digits = 5) == round(loadmodel$coefficients, digits = 
 
 
 #format
-#Generalized formatting function
+#Generalized formatting function. Seems like I was trying to write a similar function, just for data frames
+df = data.frame(f = factor(x = letters[1:4]))
+df = format.data.frame(df)
+#converts this to characters from factors. There are a lot of other things that format can do but this
+#isn't the most interesting thing to me at the moment
+
+
+#sink
+#documentation says that it sends R output to a file. We need to open the connection to the file and then close it
+sink("sink_test.txt")
+model = lm(formula = Petal.Width~Petal.Length,data = iris)
+summary(model)
+sink()
+#cool. So it masks the output and writes it to a text file. I could see this being a quick and dirty way to produce some
+#documents. It seems like knitr and other things like that are going to produce much more high quality documents however
+#this could be good if we're in a hurry or don't care how it looks
+
+
+#capture.output
+#similar to sink but it wants you to name the expressions when calling capture.output. We can capture either as
+#a text file or as a string within the environment
+model.summary = capture.output(summary(model))
+model.summary
+#could be nice if we are planning on getting some output in a loop or function and want to get certain parts of the text
+#I suspect that if we're doing that there will probably be an easier way. because doing something like
+model.summary[3]
+#is sort of worse version of
+model$call
+
+
+#sprintf
+#this is definitely a mysterious function to me. I used it several times when working with knitr to get the formatting correct
+#but I was doing it in a way that was pretty haphazard with little understanding on my part
+#The documentation says that it is a wrapper for a C function (probably why i don't get it) that formats character vectors
+#it looks like we have the ability to choose some number and character formatting like double, integer ect
+#woahhhhh the examples have my name in them CREEPY
+sprintf("%s is %f feet tall\n", "Sven", 7.1)
+#so it looks like it's taking in a string and a double and formatting them appropriatley
+#let's see how it works with multiple strings
+sprintf("%s is %f feet tall\n", c("Sven","Gangsta"), c(7.1,6.9))
+#ok so it looks like it wants to create a character vector with each instance of the character vector we supply
+#but it doesn't take every combination, it just takes the corresponding elements. If we choose different lengths:
+sprintf("%s is %f feet tall\n", c("Sven","Gangsta"), c(7.1,6.9,8.2874))
+#it doesnt want to... perhaps one has to be a multiple of the other?
+sprintf("%s is %f feet tall\n", c("Sven","Gangsta"), c(7.1,6.9,8.2874, 3.921))
+#yep
+#Well... still not sure exactly how to use this and when you want to but we'll keep our eyes open
+
+
+#count.fields
+#helps us in trying to diagnose problems with reading data sets. We'll get a count back of the fields the version
+#of read.table (or equiv) thinks there should be. Might be nice if we get some damaged data or the Rstudio assistant
+#fails us somehow
+
+
+#saveRDS & readRDS
+#these seem very similar to dput but I guess these methods 'serialize' the output so it's more clear what's what
+saveRDS(women, "women.rds")
+women2 <- readRDS("women.rds")
+all.equal(women,women2)
+#okie... I guess since save() is mentioned after the RDS methods, it's not as good?
+#some forums I'm looking at suggest that some types of R objects are harder to recover after they're written with save()
+
+
+#library(foreign)
+??foreign
+#some methods in this package to read and write files for other statistical packages. This could be nice to use the
+#extracts John creates in STATA. I'm not super excited about trying to get these to work but the next time
+#I need a snapshot, I'll give it a shot
+
+
+#basename, dirname, fuke)ext
+#we can get portions of the path of a file with these
+basename("C:/Users/shalvorson/Documents/R files/AdancedR.notes/sink_test.txt")
+dirname("C:/Users/shalvorson/Documents/R files/AdancedR.notes/sink_test.txt")
+library("tools")
+file_ext("C:/Users/shalvorson/Documents/R files/AdancedR.notes/sink_test.txt")
+#aight. Can be nice if we need to use this for generic files
+
+
+#file.path
+#this is kind of like a specialized version of paste() that helps us create file paths
+file.path("C:","Users","shalvorson","Documents","R files","AdvancedR.notes") == getwd()
+
+
+#path.expand
+path.expand("~/sink_test.txt")
+#can get the longer version of a file path of something in our wd
+
+#normalizePath
+#this says that it converts a file path in to the 'canonical form for the platform'. I think this is saying that if you're
+#on a windows machine it's going to turn our \ into // and function differently on a mac
+normalizePath(getwd())
+#I was really hoping that it would be the reverse and take the formatting we get from pasting the clipboard
+#still not sure how to write a function that does that.
+
+
+#file.exists
+#there are a bunch of file manipulation methods and I've used most of them but this one seems most interesting to me at the moment
+#it returns a logical if the file we specify is there. This could be useful for trying to not overwrite other files
+#and do things like : if it exists, load it , if not create a new one.
+file.exists("sink_test.txt")
+#looks in wd first.
+
+
+#file.info
+#gives some vitals on a file of our choosing
+file.info("sink_test.txt")
+#oh that's nice. I could see this being very useful because we can get creation, modification times out of this and maybe say something
+#like 'get the most recent file'. If I ever get that curl thing going this will be nice
+
+
+#tempfile and tempdir
+#Create temporary files and directories. One of the things that I like about R compared to STATA is that we don't need to rely on tempfiles
+#as much because R can hold multiple objects in memory. This still seems like it could be good though if we had a program
+#that wanted to create objects and then load them again. We'll preserve some memory and order by not multiplying our files all over the place
+
+#download.file
+#Does what it says. You specify the url and it fetches. I wonder if I can get it to download iStation data?
+#I'm gonna log in first because bypassing the secure login is a little beyond me at the moment. This
+download.file("https://secure.istation.com/Report/AssessmentResultExport/d80679?Pid=ISIPEN&Year=2016&period=3", destfile = "downloadfile_test.txt")
+#okay well that didn't work. It seems like it tried to just download some of the metadata for the site
+#Here's an example from a blog:
+URL      <- "http://rfunction.com/code/1202/120222.R"
+destfile <- "downloadfile_test2.R"
+download.file(URL, destfile)
+#okay so this example is simpler because that URL just leads to a plain text page. The book also mentions the 'downloader'
+#package which says that it can do some of the things curl can without external dependencies
+#may want to look into this as it says that downloader is much simpler than Rcurl
+
