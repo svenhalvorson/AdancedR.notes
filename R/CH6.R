@@ -569,3 +569,75 @@ a <- b <- c <- 3
 # EXERCISES
 
 # 1. How does the chdir parameter of source() compare to in_dir()? Why might you prefer one approach to the other?
+
+# It looks like the chdir parameter changes the directory before it works and then back to the original.
+# in_dir changes the directory upon exit on exit. We probably want source when we want to work somewhere
+# and get back to where we started but in_dir seems better when
+
+# 2. What function undoes the action of library()? How do you save and restore the values of options() and par()?
+
+# You can remove a package from the workspace with
+detach("package:SvenR", unload = TRUE)
+
+# Saving and restoring the values of options isn't that hard:
+opt <- options()
+options()$ylbias
+options(ylbias = .3)
+# restore
+options(opt)
+options()$ylbias
+
+# Hopefully restoring the graphical parameters is just as easy
+p <- par()
+par(yaxt = "t")
+par()
+par(p)
+par()
+# yay
+
+# 3. Write a function that opens a graphics device, runs the supplied code, and closes the graphics device
+# (always, regardless of whether or not the plotting code worked).
+
+# I'm not 100% sure I understand what the author means by graphics device but I'm thinking this means
+# writing a png or something like that
+
+png.plot <- function(x, y, file){
+  on.exit(dev.off())
+  png(filename = file)
+  plot(x, y)
+}
+
+png.plot(iris$Sepal.Length,iris$Sepal.Width, "nonNull.png")
+png.plot(iris$Sepal.Length, NULL, "broked.png")
+dev.cur()
+# So it looks like the default graphics parameter is the RStudioGD but we can actually tell the png got closed
+# by this:
+png()
+dev.cur()
+dev.off()
+dev.cur()
+
+# 4. We can use on.exit() to implement a simple version of capture.output().
+capture.output2 <- function(code) {
+  temp <- tempfile()
+  on.exit(file.remove(temp), add = TRUE)
+
+  sink(temp)
+  on.exit(sink(), add = TRUE)
+
+  force(code)
+  readLines(temp)
+}
+capture.output2(cat("a", "b", "c", sep = "\n"))
+
+# Compare capture.output() to capture.output2(). How do the functions differ? What features have
+# I removed to make the key ideas easier to see? How have I rewritten the key ideas to be easier to understand?
+
+# ok let's take a look
+?capture.output
+# So it looks like the options to choose file names, append, and the options to print is mandatory
+# capture.output2 just shows us the skelton of capture.output. We create a tempfile and choose it
+# as the target for sink, execute the code, print it so we can see what's in the tempfile, and
+# clean up afterwords.
+
+#The quiz answers seems pretty intuitive now so maybe I learned something! maybe...
