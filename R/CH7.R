@@ -68,7 +68,7 @@ is.object(lm(formula = Sepal.Length~Sepal.Width,data = iris))
 # beyond just a base type.
 
 
-#########
+v#########
 ## 7.3 ##
 #########
 # S3 Objects
@@ -306,5 +306,450 @@ genericFlag = lapply(X = names(funs), FUN = isGeneric)
 genericFlag = as.logical(genericFlag)
 generics = funs[genericFlag]
 # seems odd that only 87 of the 1205 functions in the base package are generic... did I fup?
-# After lookign at them
-generic_methods = lapply(X = generics, FUN = methods)
+# After lookign at them it looks fine
+generic_methods = lapply(X = names(generics), FUN = methods)
+has_POSIXt = lapply(X = generic_methods, FUN = grepl, pattern = "POSIXt")
+has_POSIXt = lapply(X = has_POSIXt, FUN = max)
+has_POSIXt = as.logical(has_POSIXt)
+has_POSIXct = lapply(X = generic_methods, FUN = grepl, pattern = "POSIXct")
+has_POSIXct = lapply(X = has_POSIXct, FUN = max)
+has_POSIXct = as.logical(has_POSIXct)
+
+# 4. Which base generic has the greatest number of defined methods?
+
+# I think we can get it at it this way
+objs <- mget(ls("package:base"), inherits = TRUE)
+funs <- Filter(is.function, objs)
+genericFlag = lapply(X = names(funs), FUN = isGeneric)
+genericFlag = as.logical(genericFlag)
+generics = funs[genericFlag]
+generic_methods = lapply(X = names(generics), FUN = methods)
+num_methods = lapply(X = generic_methods, FUN = length)
+num_methods = as.numeric(num_methods)
+most_methods = num_methods == max(num_methods)
+generics[most_methods]
+# the or symbol?
+methods(`|`)
+# Okay then
+
+# 5. UseMethod() calls methods in a special way. Predict what the following code will return, then
+# run it and read the help for UseMethod() to figure out what’s going on. Write down the rules in
+# the simplest form possible.
+y <- 1
+g <- function(x) {
+  y <- 2
+  UseMethod("g")
+}
+g.numeric <- function(x) y
+g(10)
+
+h <- function(x) {
+  x <- 10
+  UseMethod("h")
+}
+h.character <- function(x) paste("char", x)
+h.numeric <- function(x) paste("num", x)
+
+h("a")
+
+# Alright, well I'll read the documentation after guessing. The first one looks like it's going to print
+# 1 for y. I don't think it matters that we assign y <- 2 because that will not overwrite the y
+# in the global environment. NOPE. Looks like when we call useMethod it's looking one level up
+# to tye y=2 inside the generic fuction g
+# My prediction for h is that it will print "char a". YEP. So it looks like there might be
+# some sort of prediction for which methdo to call
+# The documentation says that it uses the class of the first object to help determine which method to use
+
+# 6. Internal generics don’t dispatch on the implicit class of base types. Carefully read ?"internal generic"
+# to determine why the length of f and g is different in the example below. What function helps distinguish
+# between the behaviour of f and g?
+f <- function() 1
+g <- function() 2
+class(g) <- "function"
+
+class(f)
+class(g)
+
+length.function <- function(x) "function"
+length(f)
+length(g)
+# So I think that the conflict the author is trying to highlight here is thatf is a function and g is something
+# with it's class set as "function". When length is called, is it supposed to use length or length.function
+# in the case of f and g?
+?`internal generic`
+# So we're told that the method dispatch uses is.object() which keys off the class attribute being set
+# It looks like the method of construction for f, never triggers is.object
+is.object(f)
+is.object(g)
+class(f)
+attr(f,"class")
+attr(g,"class")
+# interesting. So the method dispatch for the internal generics uses is.object. If TRUE, then it looks for methods
+# within (length for example). Since g's class attribute was never set, length does not look for another method
+# when called to f.
+
+
+#########
+## 7.4 ##
+#########
+# S4
+
+# This is the slightly more rigid version of S3. We're told that unlike S3
+#  a) Classes have formal definitions which describe their fields and relationships
+#  b) Method dispatch can be done using multiple arguments
+#  c) S4 objects also have slots with the @ operator to access them
+
+# We can identify S4 objects pretty easily from str(), pryr::otype() or isS4()
+model = lm(formula = Sepal.Width~Sepal.Length, data = iris)
+isS4(model)
+str(model)
+# K so that looks like an S3 object
+library("stats4")
+library("pryr")
+y <- c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8)
+nLL <- function(lambda) - sum(dpois(y, lambda, log = TRUE))
+fit <- mle(nLL, start = list(lambda = 5), nobs = length(y))
+isS4(fit)
+str(fit)
+otype(fit)
+# Here's an example of an S4 generic
+?nobs
+isS4(nobs)
+ftype(nobs)
+# and examples of S4 methods
+mle_nobs <- method_from_call(nobs(fit))
+isS4(mle_nobs)
+ftype(mle_nobs)
+# So this is definitely thought of as a method, not a generic
+
+# The generic is() adapts to the type of object passed to it.
+# if we want to test inheritance, we can put the object and class name in as arguments
+is(fit,"mle")
+class(fit)
+
+# We have some ability to wrangle all the classes and methods in the S4 world
+getGenerics()
+getClasses()
+showMethods()
+
+# S4 does have some of the class level safegaurds that you might have expected to be in S3
+# The function setClass() has informatin on what it means to be a member of that class
+# New objects can be created with new(). We can get more information with class?className
+class?mle
+# kinda nice that you can see the methods that mle can invoke
+
+# S4 also has a validity method to test whether or not an object has all the necessary qualities
+# to count as a member
+validObject(fit)
+
+# Here is an example of how to set up a class constructor and inheritance structure:
+setClass("Person",
+         slots = list(name = "character", age = "numeric"))
+setClass("Employee",
+         slots = list(boss = "Person"),
+         contains = "Person")
+
+alice <- new("Person", name = "Alice", age = 40)
+john <- new("Employee", name = "John", age = 20, boss = alice)
+?setClass
+
+# Interesting, so I'm not exactly sure what setClass is doing here. It seems to be defining
+# (somewhere in memory) what it means to be a person or employee. I'm not seeing it
+# in the global environment. The documentation suggests that the class constructor is created
+# invisibly.
+is(john, "Person")
+# So will the constructor allow us to create a person without an age?
+svenboy <- new("Person", name = "Sven")
+# yeah so it seems like it will still create empty slots for attributes not specified
+# Access slots:
+svenboy@name
+john@boss
+
+# S3 versions of S4 objects can be recovered (when applicable) with the .Data slot
+setClass("RangedNumeric",
+         contains = "numeric",
+         slots = list(min = "numeric", max = "numeric"))
+rn <- new("RangedNumeric", 1:10, min = 1, max = 10)
+rn@min
+rn@.Data
+otype(rn@.Data)
+
+# We're allowed to create new S4 generics and methods for those generics
+setGeneric("union")
+str(union)
+setMethod("union",
+          c(x = "data.frame", y = "data.frame"),
+          function(x, y) {
+            unique(rbind(x, y))
+          }
+)
+union(data.frame(x = 0:3),data.frame(x = 2:4))
+# so we've added a method for data frames and I'm guessing the method dispatch by internal
+# type makes it so we don't really need to put controls on the type of input allowed
+
+# If you're creating a new S4 generic, it needs to have a 'useMethod()'  equivalent:
+setGeneric("myGeneric", function(x) {
+  standardGeneric("myGeneric")
+})
+
+# EXERCISES
+
+# 1. Which S4 generic has the most methods defined for it? Which S4 class has the most
+# methods associated with it
+gens = getGenerics()
+generics = as.character(gens@.Data)
+gens = lapply(X = generics, FUN = getGeneric)
+s4flag = lapply(X = gens, FUN = isS4)
+sum(as.logical(s4flag))
+# So it loooks like we only got s4 functions to start with
+meth = list()
+for(i in 1:length(generics)){
+
+  meth[[i]] = as.character(methods(generics[i]))
+}
+# Damnation, there is some invisible functions called 'complete' that's listed
+# i have no idea what that means but let's go on
+meth = list()
+for(i in c(1:39,41:54, 56:length(generics))){
+  print(i)
+  meth[[i]] = as.character(methods(generics[i]))
+}
+nmethods = as.numeric(lapply(X = meth, FUN = length))
+mostmeth = nmethods == max(nmethods)
+gens = gens[c(1:39,41:54, 56:length(generics))]
+gens[mostmeth]
+# it's the pipe again
+
+# Hopefully we can do basically the same thing with classes
+# clas <- getClasses()
+# meth = list()
+# for(i in 2:length(clas)){
+#   print(i)
+#   meth[[i]] = as.character(methods(clas[i]))
+# }
+# whateva
+
+# 2. What happens if you define a new S4 class that doesn't containian an existing
+# class? (Hint: read about virtual classes in ?setClass.)
+# The documentation says that trying to call the generator of an S4 class that
+# doesn't reference an exisiting class will result in an error
+
+# 3. What happens if you pass an S4 object to an S3 generic? What happens if you
+# pass an S3 object to an S4 generic? (Hint: read ?setOldClass for the second case.)
+setClass("Person", slots = list(name = "character", age = "numeric"))
+sven = new("Person", name = "Sven", age = 28)
+isS4(sven)
+is_s3_generic("plot")
+plot(sven)
+# It looks like it tries toerce the s4 objects into an s3 object that it can use
+setClass("Robot", slots = list(beeboop = "numeric", serial = "character"))
+svenbot = new("Robot", beeboop = 1:3, serial = "SVENBOT3431a3")
+plot(svenbot@beeboop)
+plot(svenbot)
+# Hmm so it seems like as.numeric doesn't know how to deal with robots. What if it's really simple
+setClass("dat data", slots = list(data = "numeric"))
+sticky = new("dat data", data = 1:3)
+plot(sticky)
+# if it's pobbible, we'll probably have to let these data conversion methods know how
+# to deal with robots or dat data.
+
+# how about trying to send and S3 object to an S4 generic?
+?setOldClass
+# So this method is for taking S3 objects and making them into S4 objects. Here's the 
+# example in the documentation
+require(stats)
+setOldClass(c("mlm", "lm"))
+# Calling setOldClass with the character list c("mlm", "lm") says these type of objects 
+# will be converted. The next line creates a s4 generic called dfResidual and dispatch
+# on the generic.
+setGeneric("dfResidual", function(model)standardGeneric("dfResidual"))
+setMethod("dfResidual", "lm", function(model)model$df.residual)
+# Then we set a method for the generic, dfResidual, for how to handle
+# lm objects: return the degrees of freedom for the residual
+
+## dfResidual will work on mlm objects as well as lm objects
+myData <- data.frame(time = 1:10, y = (1:10)^.5)
+myLm <- lm(cbind(y, y^3)  ~ time, myData)
+# So this is an s3 object of class lm
+isS4(myLm)
+class(myLm)
+showClass("data.frame")# to see the predefined S4 "oldClass"
+
+## two examples extending S3 class "lm", class "xlm" directly
+## and "ylm" indirectly
+setClass("xlm", representation(eps = "numeric"), contains = "lm")
+setClass("ylm", representation(header = "character"), contains = "xlm")
+ym1 = new("ylm", myLm, header = "Example", eps = 0.)
+str(ym1)
+
+#########
+## 7.5 ##
+#########
+# RC
+
+# This is the last (and most recent) form of OO programming. They're different
+# than the two previous methods in that RC methods belong to the object, not
+# the function. RC objects objects are also mutable. Unlike the copy-on-modify
+# system that we're used to, these objects can keep the same address on 
+# modification and have their data change.
+
+# We can create these objects in more or less the same way. Here's a generic account
+Account <- setRefClass("Account")
+# This saves the generator to 'Account'
+f = Account$new()
+# It's kinda strange that RStudio writes that f is an environment but
+str(f)
+# lists this as a reference class 'Account'
+# We are also allowed to attach 'fields' which are equivalent to slots in S4 land
+Account <- setRefClass("Account", fields = list(balance = "numeric"))
+a <- Account$new(balance = 100)
+a$balance
+# So now a is an account class member and has a balance that can be accessed in the
+# same way lists get their elements through $. Note that class works perfectly well
+class(a)
+# We can also modify the fields
+a$balance = -1
+a$balance
+# Notice how assignment is somewhat different
+b <- a
+b$balance
+a$balance = 0
+b$balance
+# This is different than s3/s4 objects because b would remain static to whatever
+# a was set as when b was defined. This demonstrates the difference:
+c = 4
+d = c
+d
+c = 5
+d
+# As a result of this funny difference, there is a copy method to get that same type
+# of behavior out of reference class objects.
+c = a$copy()
+c$balance
+a$balance <- 2
+c$balance
+# now in this example, c just is a copy of a, not a pointer to a
+
+# Here is a more complicated example with methods. Remember that RC objects have
+# methods, not generics
+Account <- setRefClass("Account",
+                       fields = list(balance = "numeric"),
+                       methods = list(
+                         withdraw = function(x) {
+                           balance <<- balance - x
+                         },
+                         deposit = function(x) {
+                           balance <<- balance + x
+                         }
+                       )
+)
+a <- Account$new(balance = 100)
+a
+a$withdraw(45)
+a
+# So it looks like these methods modify the objet in place, we don't need to do something
+# like a <- a$withdraw(45) as you might with the s3/s4 methods
+
+# The inheritance behavior is pretty intuitive. We need to include a 'contains' argument
+# in the setRefClass definition.
+NoOverdraft <- setRefClass("NoOverdraft",
+                           contains = "Account",
+                           methods = list(
+                             withdraw = function(x) {
+                               if (balance < x) stop("Not enough money")
+                               balance <<- balance - x
+                             }
+                           )
+)
+# So this means noOverdraft objects will inherit account properties, as well as a different 
+# withdrawl method that will (presumably) take prescedent over the withdraw method from
+# account.
+john <- NoOverdraft$new(balance = 100)
+john
+is(john,"Account")
+john$withdraw(200)
+# It looks like we can call the method from account
+john$`withdraw#Account`(200)
+john
+# yeah so, by default it will call it's own method. If it fails to find a method
+# in it's own class definition, it will look up the inheritance chain
+
+# RC objects are technically S4 objects but are still considered RC
+isS4(john)
+otype(john)
+
+# EXERCISES
+# 1. Use a field function to prevent the account balance from being directly manipulated.
+# (Hint: create a "hidden" .balance field, and read the help for the fields argument in setRefClass().)
+Account <- setRefClass("Account",
+                       fields = list(.hiddenbalance = "numeric",
+                                     getbal = function(x) .hiddenbalance)
+                       )
+# I don't think that's quite what the author meant by hidden
+# I can't really figure this out. I've looked at some forum posts and I don't see a way to make the
+# balance field completely inaccesible from the outside. Here's something closer:
+Account <- 
+  setRefClass("Account",
+              fields = list(balance = "numeric"),
+              methods = list(
+                withdraw = function(x) {
+                  balance <<- balance - x
+                },
+                deposit = function(x) {
+                  balance <<- balance + x
+                }
+              ))
+Account$accessors("balance")
+a<-Account$new("balance"=0)
+a$setBalance(10)
+a$getBalance()
+# So this gets the feeling of the get/set style but there's still nothing stopping you from just writing
+a$balance = 100
+a
+
+# 2. I claimed that there aren't any RC classes in base R, but that was a bit of a simplification.
+# Use getClasses() and find which classes extend() from envRefClass. What are the classes used for?
+# (Hint: recall how to look up the documentation for a class.)
+
+baseClasses <- getClasses()
+extRef <- lapply(X = baseClasses, FUN = extends, class2 = "envRefClass")
+extRef = baseClasses[as.logical(extRef)]
+extRef
+# So these look like helpers for the RC OOP system. I see why the author wouldn't think of these as
+# 'counting' because they're somewhat intrinsic to the use of the RC classes
+
+#########
+## 7.6 ##
+#########
+# Picking a system
+
+# The author suggests that S3 systems almost always sufficient for what we want to do but there are some
+# examples (bioconductor, marices) of people using S4 systems for good reasons. The RC sytem is thought
+# to be the easiest to understand for people with other programming backgrounds. There
+
+# Quiz
+# I'm actually gonna go through this again because this chapter was quite a bit more confusing than the
+# last few.
+
+# 1. How do you tell what OO system (base, S3, S4, or RC) an object is associated with?
+# Well I know we can use the isS4 and the is() function 
+# The given solution is that we can do a process of elimination. Only base objects will return false
+# with is.object(), if it's not base but !isS4 then it's S3. If it's !is(x, "refCLass") then it's S4
+
+# 2. How do you determine the base type (like integer or list) of an object?
+# use typeof()
+typeof(`+`)
+typeof(1:3)
+
+# 3. What is a generic function?
+# Generic functions are functions that have methods within them that cause the function to react
+# differently to different types of objects. We talked about how the plot() generic reacts differently
+# to integers and lm objects. This is the result of the different plot methods
+
+# 4. What are the main differences between S3 and S4? What are the main differences between S4 & RC?
+# S3 differs from S4 mainly in that to be a member of a S3 class, the only real requirement is taht
+# the class attribute be set appropriately. S4 objects are created from new() and as a result
+# their structure is a little bit more controlled. RC objects are different from S4 objects in that
+# the methods for those objects are stored in the objects, not the generics. RC is also different in that
+# it does not use copy-on-modify. This means that a lot of the functions called by RC objects change the values
+# stored in the object. THis is like account$setbalance(5) vs. account$balance <- 5
