@@ -78,3 +78,118 @@ e = new.env()
 e$a = 1
 e$b = 2
 ls.str(e)
+# Cool, this just got me to go create a mini function for my package to clear console and
+# an environment's memory
+
+# If we want to work within an environment and grab elements from the environment, we have
+# $, [[]], and get() to access objects
+
+e$a
+e[["a"]]
+get("a", envir = e)
+
+# Unlike lists where we just set elements to null to 'delete' them, here we have to use
+# rm(). Let's see
+l = list(a = 1:3, b = letters[1:3], c = "OHBOYOHBOYOHBOY")
+l[["a"]]
+l[["d"]]
+l[["a"]] = NULL
+l[["a"]]
+# Yeah I guess I kinda forgot this aspect of lists.
+e$a = NULL
+ls(envir = e)
+# and with the environment setting it to null still preserves the name in the environment
+# a is now just a pointer that points at null
+
+# We can use the exists function to try and determine if something is in memory. The envir
+# chooses where exists() starts looking. inherits determines whether or not it will look
+# up the chain
+x = 10
+# note x is in globalenv
+exists("x", envir = e)
+exists("x", envir = e, inherits = FALSE)
+
+# Finally, == cannot accept environments as arguments so we gotta do
+e = new.env()
+e$a = 1
+e$b = 2
+f = new.env()
+identical(f,e)
+f$a = 1
+f$b = 2
+identical(f,e)
+# oh so.... just having all identical contents doesn't make two environments
+# identical. They literally need to be the same piece of memory?
+?identical
+
+# EXERCISES
+
+# 1) List three ways in which an environment differs from a list.
+# Environments have parents, environments do not have a natural order to their
+# elements, and environments use pointers to objects instead of copy-on-replace
+
+# 2) If you don’t supply an explicit environment, where do ls() and rm() look?
+#    Where does <- make bindings?
+# These all default to globalenv()
+
+# 3) Using parent.env() and a loop (or a recursive function), verify that the
+#    ancestors of globalenv() include baseenv() and emptyenv(). Use the same basic
+#    idea to implement your own version of search().
+
+search2 <- function(e = globalenv()){
+
+  if(!is.environment(e)){
+    stop("e must be an environment")
+  }
+  # Hold the chain here
+  inher = c(e)
+  # Now loop till we get to empty
+  while(!identical(e, emptyenv())){
+    e = parent.env(e)
+    inher = c(inher, e)
+  }
+  print(inher)
+
+}
+# meh, the output is a little large but w/e. We could replace the values
+# of inher with the names() of the environments when applicable
+
+
+#########
+## 8.2 ##
+#########
+# Recursing over environments
+
+# In this section we'll be looking at the nested structure of environments
+# Recall that the where function can look through environments for a name
+# Here's the code for it:
+where <- function(name, env = parent.frame()) {
+  if (identical(env, emptyenv())) {
+    # Base case
+    stop("Can't find ", name, call. = FALSE)
+
+  } else if (exists(name, envir = env, inherits = FALSE)) {
+    # Success case
+    env
+
+  } else {
+    # Recursive case
+    where(name, parent.env(env))
+
+  }
+}
+
+# This seems pretty straightforward and although I'm not quite sure that I would
+# have come up with it. It's recursive because it calls itself. I probably would
+# have written a while loop but this seems better.
+
+where2 <- function(name, env = parent.frame()){
+
+  #indicator:
+  i = 0
+
+  while(i = 0){
+
+  }
+}
+
