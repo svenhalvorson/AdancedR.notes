@@ -26,7 +26,7 @@ e$b = 1:3
 # Remember that lexical scoping in R works so that if a name is not found in one environment
 # then R will look up to the parent environment and so on. The author says something a little
 # strange here. We're told that we usually speak about envirnments as having parents and
-# ancestors (the environments they're nested in) but we're told that we can't talke so easily
+# ancestors (the environments they're nested in) but we're told that we can't talk so easily
 # about children. We're told : 'given an environment we have no way to find its children'
 # This is pretty surprising to me. I wonder if he means something different than I'm thinking of
 # because it seems like we could just use is.environment in an apply statement and get all the
@@ -77,13 +77,13 @@ as.environment("FAKE ENV")
 e = new.env()
 e$a = 1
 e$b = 2
+e$c = lm(formula = Sepal.Width ~ Sepal.Length, data = iris)
 ls.str(e)
 # Cool, this just got me to go create a mini function for my package to clear console and
 # an environment's memory
 
 # If we want to work within an environment and grab elements from the environment, we have
 # $, [[]], and get() to access objects
-
 e$a
 e[["a"]]
 get("a", envir = e)
@@ -95,8 +95,10 @@ l[["a"]]
 l[["d"]]
 l[["a"]] = NULL
 l[["a"]]
+l
 # Yeah I guess I kinda forgot this aspect of lists.
 e$a = NULL
+e$a
 ls(envir = e)
 # and with the environment setting it to null still preserves the name in the environment
 # a is now just a pointer that points at null
@@ -183,13 +185,46 @@ where <- function(name, env = parent.frame()) {
 # have come up with it. It's recursive because it calls itself. I probably would
 # have written a while loop but this seems better.
 
-where2 <- function(name, env = parent.frame()){
+# And in fact the author supplies a version:
+is_empty <- function(x) identical(x, emptyenv())
 
-  #indicator:
-  i = 0
-
-  while(i = 0){
-
+f2 <- function(..., env = parent.frame()) {
+  while(!is_empty(env)) {
+    if (success) {
+      # success case
+      return()
+    }
+    # inspect parent
+    env <- parent.env(env)
   }
+
+  # base case
 }
 
+# EXERCISES
+
+# 1. Modify where() to find all environments that contain a binding for name.
+
+where2 <- function(name, env = parent.frame()) {
+  # Make a vector to hold results
+  ret = c()
+  if(identical(env, emptyenv())) {
+    # Base case
+    stop("Can't find ", name, call. = FALSE)
+
+  }
+  if (exists(name, envir = env, inherits = FALSE)) {
+    # Success case
+    ret = c(ret,env)
+
+  }
+
+  # Call the function again, rely in it terminating when we hit emptyenv
+  where2(name, parent.env(env))
+}
+
+en = new.env()
+f = function(x){3*x}
+en$mean = f
+
+where2("mean",en)
