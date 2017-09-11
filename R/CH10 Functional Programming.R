@@ -444,7 +444,7 @@ html <- lapply(setNames(tags, tags), simple_tag)
 # So the author notes that by keeping the functions in a list, they don't conflict with
 # global environment but it also makes for a lot of keystrokes to use it a lot
 html$p("This is ", html$b("bold"), " text.")
-# whereas if these functions were in the global it would be 
+# whereas if these functions were in the global it would be
 p("This is ",b("bold"), " text.")
 
 # Three suggestions are given to make this easier to deal with. The first is with()
@@ -461,6 +461,137 @@ list2env(html, globalenv())
 
 # EXERCISES
 
-# 1. Implement a summary function that works like base::summary(), but uses a list of 
+# 1. Implement a summary function that works like base::summary(), but uses a list of
 # functions. Modify the function so it returns a closure, making it possible to use it as a function factory.
+
+# Alright so the summary functions we'll store here in a LIST
+sum_funs <- list(
+  min = min,
+  first = function(y){quantile(y,0.25)},
+  median = median,
+  mean = mean,
+  third = function(y){quantile(y,0.75)},
+  max = max
+)
+
+summary2 <- function(x){
+  q = unlist(lapply(X = sum_funs, FUN = function(f){f(x)}))
+  names(q) = names(sum_funs)
+  q
+}
+summary2(1:100)
+summary(1:100)
+# hawt. No, this has no safeguards or ability to take in lists but you get the idea
+
+# 2. Which of the following commands is equivalent to with(x, f(z))?
+
+# a) x$f(x$z).
+# No, what would x be in this case? Is it a list of of functions or a data frame?
+# b) f(x$z).
+# Yes this is the same
+# c) x$f(z).
+# No, z would have to be in the global
+# d) f(z).
+# No same reasons
+# e) It depends.
+# I think this last 'question' is there to remind us that expressions a, c, and d
+# COULD work if the global environment was the right way but I believe that only
+# a is the only one that's really the same+
+
+
+##########
+## 10.5 ##
+##########
+# Case study: numerical integration
+
+# This last chapter is demonstration of how to use some of these functional programming
+# tricks. We'll go through buidling a numerical integration tool
+
+# We'll try and integrate sinx from 0 to pi
+# Here are some examples of things that don't work that well:
+midpoint <- function(f, a, b) {
+  (b - a) * f((a + b) / 2)
+}
+
+trapezoid <- function(f, a, b) {
+  (b - a) / 2 * (f(a) + f(b))
+}
+
+midpoint(sin, 0, pi)
+trapezoid(sin, 0, pi)
+
+# So the midpoint they're both kinda bad.
+# we'll work on using these functions as smaller pieces of integrating the whole thing
+# Here's an idea:
+midpoint_composite <- function(f, a, b, n = 10) {
+  points <- seq(a, b, length = n + 1)
+  h <- (b - a) / n
+
+  area <- 0
+  for (i in seq_len(n)) {
+    area <- area + h * f((points[i] + points[i + 1]) / 2)
+  }
+  area
+}
+
+# So this one takes in the function, bounds of integration, and number of bins use the midpoint
+# method across
+midpoint_composite(f = sin, a = 0, b = pi)
+
+# Trapezoid equivalent
+trapezoid_composite <- function(f, a, b, n = 10) {
+  points <- seq(a, b, length = n + 1)
+  h <- (b - a) / n
+
+  area <- 0
+  for (i in seq_len(n)) {
+    area <- area + h / 2 * (f(points[i]) + f(points[i + 1]))
+  }
+  area
+}
+
+# The author notes that these functions might be a bit repetative. We might be
+# able to write another function that takes the method of integration
+composite <- function(f, a, b, n = 10, rule) {
+  points <- seq(a, b, length = n + 1)
+
+  area <- 0
+  for (i in seq_len(n)) {
+    area <- area + rule(f, points[i], points[i + 1])
+  }
+
+  area
+}
+
+composite(sin, 0, pi, n = 10, rule = midpoint)
+
+# So this basically lets us insert a function of our own to composite
+# and use that each time. Basically if the function fits the form of
+# of taking in another function and doing some sort of calculation with
+# the endpoints.
+
+# So now we can just write our own new functions and use them with composite
+simpson <- function(f, a, b) {
+  (b - a) / 6 * (f(a) + 4 * f((a + b) / 2) + f(b))
+}
+composite(sin, 0, pi, n = 10, rule = simpson)
+
+# I wasn't aware of this but these functions belong to a group of functions called the 'newton-cotes functions'
+# They all follow this form:
+
+newton_cotes <- function(coef, open = FALSE) {
+  n <- length(coef) + open
+
+  function(f, a, b) {
+    pos <- function(i) a + i * (b - a) / n
+    points <- pos(seq.int(0, length(coef) - 1))
+
+    (b - a) / sum(coef) * sum(f(points) * coef)
+  }
+}
+
+# so now we can make our own newton cotes functions and send them to composite
+boole <- newton_cotes(c(7, 32, 12, 32, 7))
+composite(sin, 0, pi, n = 10, rule = boole)
+
 
