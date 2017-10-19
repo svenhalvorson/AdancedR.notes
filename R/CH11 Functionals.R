@@ -268,7 +268,7 @@ all.equal(Map(f = weighted.mean, x = xs, w = ws), Map(f = weighted.mean, w = ws,
 # functionals. The example given is a rolling mean:
 rollmean <- function(x, n) {
   out <- rep(NA, length(x))
-  
+
   offset <- trunc(n / 2)
   for (i in (offset + 1):(length(x) - n + offset + 1)) {
     out[i] <- mean(x[(i - offset):(i + offset - 1)])
@@ -280,7 +280,7 @@ plot(x)
 lines(rollmean(x, 5), col = "blue", lwd = 2)
 lines(rollmean(x, 10), col = "red", lwd = 2)
 
-# okay let's unpack this first. So we feed it a vector of values (x) and n which 
+# okay let's unpack this first. So we feed it a vector of values (x) and n which
 # presumably should be integer(1). The offset is half of n, rounded down. This is trying to tell
 # us how far back/forward we'll go to calculate the rolling mean and it's set so if you feed
 # odd numbered bandwidth, it halves it and rounds down so n=4 and n=5 both yield an offset of 2.
@@ -293,7 +293,7 @@ lines(rollmean(x, 10), col = "red", lwd = 2)
 
 rollapply <- function(x, n, f, ...) {
   out <- rep(NA, length(x))
-  
+
   offset <- trunc(n / 2)
   for (i in (offset + 1):(length(x) - n + offset + 1)) {
     out[i] <- f(x[(i - offset):(i + offset - 1)], ...)
@@ -306,8 +306,8 @@ lines(rollapply(x, 5, median), col = "red", lwd = 2)
 # Which is more general since any function that can produce output across an
 # attomic can be used. Median is show in this case.
 
-# The last piece in this section is about parallelisation. The first point made is that 
-# the order that we compute f(x) in does not matter since it does not depend on the other 
+# The last piece in this section is about parallelisation. The first point made is that
+# the order that we compute f(x) in does not matter since it does not depend on the other
 # values. This example is given:
 lapply3 <- function(x, f, ...) {
   out <- vector("list", length(x))
@@ -320,10 +320,10 @@ unlist(lapply(1:10, sqrt))
 unlist(lapply3(1:10, sqrt))
 # So essentially lapply3 permutes the indices (might not start at i == 1) but
 # still assigns them to the same locations since out[[i]] will hit whatever
-# index it's fed. The reason this example is given is to demonstrate that 
-# the computer can potentially use multiple cores to compute f(x) and then 
+# index it's fed. The reason this example is given is to demonstrate that
+# the computer can potentially use multiple cores to compute f(x) and then
 # reassemble the list. This is called parallelisation and it can be helpful
-# if f(x) is slow to compute. The parallel package can do this. THe functions that 
+# if f(x) is slow to compute. The parallel package can do this. THe functions that
 # take advantage of this start with mc
 
 library(parallel)
@@ -331,7 +331,7 @@ unlist(mclapply(1:10, sqrt, mc.cores = 4))
 
 # note that we can specify the number of cores. The author mentions that
 # these functions are actually slower than their single core equivalents if
-# the computations are simple. We should reserve them for times when it's going to 
+# the computations are simple. We should reserve them for times when it's going to
 # go slow. I might try and use this next time I do a mass upload to google
 # drive although that may be delayed by internet speed more than the computer
 
@@ -349,7 +349,7 @@ vapply(X = iris[types], FUN = sd, FUN.VALUE = numeric(1))
 # 3. The following code simulates the performance of a t-test for non-normal data. Use sapply()
 # and an anonymous function to extract the p-value from every trial.
 trials <- replicate(
-  100, 
+  100,
   t.test(rpois(10, 10), rpois(7, 10)),
   simplify = FALSE
 )
@@ -357,11 +357,11 @@ sapply(X = trials, FUN = function(x){x$p.value})
 # Extra challenge: get rid of the anonymous function by using [[ directly.
 sapply(X = trials, FUN = `[[`, "p.value")
 
-# 4. What does replicate() do? What sort of for loop does it eliminate? 
+# 4. What does replicate() do? What sort of for loop does it eliminate?
 
 # I'm having a little bit of a hard time understanding how replicate() differs from rep(), which I
 # use frequently. The documentation says:
-# replicate is a wrapper for the common use of sapply for repeated evaluation of an expression 
+# replicate is a wrapper for the common use of sapply for repeated evaluation of an expression
 # (which will usually involve random number generation).
 # So maybe something like this this:
 
@@ -378,10 +378,10 @@ rep(x = rpois(n = 100, lambda = 3), times = 10)
 # Why do its arguments differ from lapply() and friends?
 # replicate() doesn't need to  have a function, it can simply be an expression like 1:3
 # but the inputs for the expression can't change. I see why the documentation mentions
-# random number generation as you likely want your samples to have the same parameters. 
+# random number generation as you likely want your samples to have the same parameters.
 
 # 5. Implement a version of lapply() that supplies FUN with both the name and the value of each component.
-# Uhhh not sure if I'm interpreting this correctly... Does this mean that we want to be able 
+# Uhhh not sure if I'm interpreting this correctly... Does this mean that we want to be able
 # to have the output be labeled?
 
 lapply_named <- function(X, FUN, names, ...){
@@ -391,7 +391,7 @@ lapply_named <- function(X, FUN, names, ...){
   ww = lapply(X = X, FUN = FUN, ... = ...)
   names(ww) = names
   ww
-  
+
 }
 samps = replicate(n = 10, expr = sample(x = c(1:4,NA), size = 5, replace = TRUE), simplify = FALSE)
 lapply_named(X = samps, FUN = mean, names = paste0("Sample ",1:10), na.rm = TRUE)
@@ -403,11 +403,11 @@ lapply_nms <- function(X, FUN, ...){
 # which is nice and concise but it doesn't allow the user to supply names. Not sure if there's any real
 # disadvantages here as you can just set the names for X first and then run this version
 
-# 6. Implement a combination of Map() and vapply() to create an lapply() variant that iterates 
-# in parallel over all of its inputs and stores its outputs in a vector (or a matrix). 
+# 6. Implement a combination of Map() and vapply() to create an lapply() variant that iterates
+# in parallel over all of its inputs and stores its outputs in a vector (or a matrix).
 # What arguments should the function take?
 
-# 7. Implement mcsapply(), a multicore version of sapply(). 
+# 7. Implement mcsapply(), a multicore version of sapply().
 # Can you implement mcvapply(), a parallel version of vapply()? Why or why not?
 
 ##########
@@ -425,8 +425,8 @@ lapply_nms <- function(X, FUN, ...){
 a <- matrix(1:20, nrow = 5)
 apply(a, 1, mean)
 # so this is computing row means.
-# As with sapply, we're warned that the output is not completely predicitable and thus apply 
-# generally should not be used within functions. 
+# As with sapply, we're warned that the output is not completely predicitable and thus apply
+# generally should not be used within functions.
 a1 <- apply(a, 1, identity)
 identical(a, a1)
 identical(a, t(a1))
@@ -434,7 +434,7 @@ a2 <- apply(a, 2, identity)
 identical(a, a2)
 
 # O s$@! this is important.... so basically it looks like what ever we iterate over becomes
-# the columns of the output. 
+# the columns of the output.
 mat = matrix(data = sample(x = c(NA,1:3), size = 30, replace = TRUE),nrow = 5)
 apply(X = mat, MARGIN = 1, FUN = is.na)
 apply(X = mat, MARGIN = 2, FUN = is.na)
@@ -452,7 +452,7 @@ x2 <- sweep(x1, 1, apply(x1, 1, max), `/`)
 # Then we take that matrix, generate the row maximums and divide each value by that. Each statement
 # we're creating the STATS value by summarising the row and then sweep applies the function given to
 # the value in X and the corresponding value in STATS. Important to note here is that
-# the value in X is the first argument to these binary operators. I like this example a bit 
+# the value in X is the first argument to these binary operators. I like this example a bit
 # better than what I saw in the past but I'm wondering how general you get with sweep(). It seems very
 # suited for this type of task, where you want to do something to a matrix by row/column, but probably
 # not much else.
@@ -510,12 +510,12 @@ tapply2 <- function(x, group, f, ..., simplify = TRUE) {
 
 # This kinda brings up my gripe with the suggested style of not naming the arguments. While it's a little
 # silly that these discrepancies exist, it seems like you can catch your errors just by tabbing through
-# the arguments. 
+# the arguments.
 
 # Another issue mentioned is that we often want to work with lists, data.frames and arrays as the input
 # and output of apply statements. Unfortunately, not every combination of these exists and data.frames are
-# excluded entirely as outputs. (I often do this though df[] <- lapply()). The plyr package has some 
-# apply functions that cover all these combinations in an orderly way. The all have the form of 
+# excluded entirely as outputs. (I often do this though df[] <- lapply()). The plyr package has some
+# apply functions that cover all these combinations in an orderly way. The all have the form of
 # selecting the input and ouput from ("l", "d", "a") and then attaching "ply" so laply would take in a list
 # and output an array.
 iris2 = as.list(iris[1:4])
@@ -555,7 +555,7 @@ split2 <- function(x, f){
   out = lapply(X = vals, FUN = pick)
   names(out) = vals
   out
-  
+
 }
 split2(x = as.numeric(iris[[1]]), f = as.character(iris[[5]]))
 # So obviously this is kinda janky as I didn't really account for data types well
@@ -575,10 +575,10 @@ split2(x = as.numeric(iris[[1]]), f = as.character(iris[[5]]))
 # the more often I find lists the easiest structure. The fact that they're very generalized makes them well suited for
 # large grain maipulations. The author mentions that map is often a useful tool and we've talked about that already.
 
-# The first function mentioned here is Reduce() which which 
+# The first function mentioned here is Reduce() which which
 # "reduces a vector, x, to a single value by recursively calling a function, f, two arguments at a time."
 # So it does some sort of pairwise function wit the first two elements and then the result and the third element ect.
-# Reduce(f, 1:3) = f(f(1,2),3). 
+# Reduce(f, 1:3) = f(f(1,2),3).
 
 # Here's the skeleton of what reduce does:
 Reduce2 <- function(f, x) {
@@ -595,7 +595,7 @@ Reduce(f = `+`, x = 1:10, right = TRUE, accumulate = TRUE)
 
 # In some sense this is kind of like changing a binary function to have an unlimited number of arguments
 # to me it seems important to think about whether the function is associative or commutative because
-# That's when you'll wonder about the right parameter. 
+# That's when you'll wonder about the right parameter.
 
 # Here's an example of finding all the common elements of a list:
 l <- replicate(5, sample(1:10, 15, replace = T), simplify = FALSE)
@@ -607,14 +607,14 @@ l
 # The next piece for manipulating lists are predicate functionals. Predicates are functions that return logical(1)
 # like is.character(). The three that are mentioned for working with lists are Filter(), Find(), and Position()
 # Just as a side note, I kinda hate that the naming conventions for functinos are not uniform. It seems like the
-# tidyverse has a nice consistant pattern but the base and other packages do not. We have Filter() from base and 
-# filter() from dplyr that are not the same. 
+# tidyverse has a nice consistant pattern but the base and other packages do not. We have Filter() from base and
+# filter() from dplyr that are not the same.
 # Filter picks only the elements that match the predicate, Find returns the first element that matches, Position
 # returns the position of the first match.
 
 df <- data.frame(x = 1:3, y = c("a", "b", "c"), z = c("boogie mama", "they're destroying our city", "dog eat dog"))
 str(Filter(is.factor, df))
-# So this is sorta like filter but for the columns of a data frame instead of the rows. 
+# So this is sorta like filter but for the columns of a data frame instead of the rows.
 str(Find(is.factor, df))
 Position(is.factor, df)
 
@@ -630,23 +630,23 @@ Position(is.factor, df)
 # 2. Use Filter() and vapply() to create a function that applies a summary statistic to every numeric column in a data frame.
 
 sum_stat <- function(df, f){
-  
+
   numerics = Filter(is.numeric, df)
   vapply(X = numerics, FUN = f, FUN.VALUE = numeric(1))
-  
+
 }
 sum_stat(df = iris, f = sd)
 # That's all well and goood but if I was actually going to make a function like this I would prefer to just
-# output something for each element but put in NA for the non numeric elements. That way you know that 
+# output something for each element but put in NA for the non numeric elements. That way you know that
 # no operation on them has been conducted
 
 # 3. What's the relationship between which() and Position()? What's the relationship between where() and Filter()?
 # which returns all the indices that match the predicate while Position returns the first index that is true
-# among which(). where() returns a logical of the predicate on each element while Filter returns the elements 
+# among which(). where() returns a logical of the predicate on each element while Filter returns the elements
 # from the list that match the predicate.
 
 
-# 4. Implement Any(), a function that takes a list and a predicate function, 
+# 4. Implement Any(), a function that takes a list and a predicate function,
 # and returns TRUE if the predicate function returns TRUE for any of the inputs. Implement All() similarly.
 
 Any <- function(f, l){
@@ -664,7 +664,7 @@ All(is.numeric, iris)
 
 
 # 5. Implement the span() function from Haskell: given a list x and a predicate function f,
-# span returns the location of the longest sequential run of elements where the predicate is true. 
+# span returns the location of the longest sequential run of elements where the predicate is true.
 # (Hint: you might find rle() helpful.)
 
 where <- function(f, x) {
@@ -672,7 +672,7 @@ where <- function(f, x) {
 }
 
 span <- function(f, l){
-  
+
   runs = rle(where(f = f, x = l))
   max(runs$lengths[runs$values == TRUE])
 }
@@ -695,5 +695,282 @@ span(is.factor, iris)
 str(optimise(sin, c(0, pi), maximum = TRUE))
 # so looks like we get the max value of the functino at 'objective' and the input that generates that at 'maximum'
 
+# We're given an example here of how to use closures in conjunctino with this:
+poisson_nll <- function(x) {
+  n <- length(x)
+  sum_x <- sum(x)
+  function(lambda) {
+    n * lambda - sum_x * log(lambda) # + terms not involving lambda
+  }
+}
+# So recall that the likelihood function is a function of the parameters of a distribution given
+# a dataset. We often look at the log likelihood as it is easier to take derivatives of and we
+# are creating the negative because R defaults to a minimum so the minimum of the negative is the
+# maximum of hte log likelihood. This is a closure because it returns a different function
+# depending on what data is submitted. This is useful because when we want to use optimize
+# we need to supply a function. Now we can write optimize(poisson_nll(data))$minimum do get the
+# MLE for any data set:
 
+x1 <- c(41, 30, 31, 38, 29, 24, 30, 29, 31, 38)
+x2 <- c(6, 4, 7, 3, 3, 7, 5, 2, 2, 7, 5, 4, 12, 6, 9)
+nll1 <- poisson_nll(x1)
+nll2 <- poisson_nll(x2)
 
+optimise(nll1, c(0, 100))$minimum
+optimise(nll2, c(0, 100))$minimum
+
+# lastly, the author mentions optim() which can optimize over multiple parameters.
+
+# EXERCISES:
+# 1. Implement arg_max(). It should take a function and a vector of inputs, and return the elements
+# of the input where the function returns the highest value.
+# For example, arg_max(-10:5, function(x) x ^ 2) should return -10. arg_max(-5:5, function(x) x ^ 2)
+# should return c(-5, 5). Also implement the matching arg_min() function.
+
+arg_max <- function(dat, f, minimum = FALSE){
+
+  # choose min/max
+  extreme = ifelse(test = minimum, yes = min, no = max)
+  # apply f to all the data
+  outputs <- vapply(X = dat, FUN = f, FUN.VALUE = numeric(1))
+  dat[outputs == extreme(outputs)]
+
+}
+arg_max(-10:5, function(x) x ^ 2)
+arg_max(-5:5, function(x) x ^ 2)
+arg_max(-5:5, function(x) x ^ 2, minimum = TRUE)
+
+# Challenge: read about the fixed point algorithm. Complete the exercises using R.
+# Well this looks cool but also might be a long rabbit hole and I wanna keep going with the book for now
+
+##########
+## 11.6 ##
+##########
+# Loops that should be left as is
+
+# Essentially all of this chapter is about variations on the for loop but there
+# are some looping scenarios for which functionals don't really APPLY HAHAHA
+
+# First off, we are advised to use traditional for loops when we are modifying in place. Example:
+trans <- list(
+  disp = function(x) x * 0.0163871,
+  am = function(x) factor(x, labels = c("auto", "manual"))
+)
+for(var in names(trans)) {
+  mtcars[[var]] <- trans[[var]](mtcars[[var]])
+}
+# So the reason we don't really wanna use a functional here is that we're doing very
+# different things to each of the columns of mtcars. Just as a side note, this seems like too
+# small of a list to be worth doing with a for loop at all but the point is well made. I'll often
+# write something like this
+df[] = lapply(...)
+# but this doesn't really work here as we will have to come up with some function that recognizes
+# what the name of the input is and then choose the right behavior.
+# An alternative is something like this:
+lapply(names(trans), function(var) {
+  mtcars[[var]] <<- trans[[var]](mtcars[[var]])
+})
+# but as the author states, this is sorta hard to read and requires knowledge of <<-
+
+# Another situation that is not easily replaced by a functional is a recursive relationship
+# This is because each of the computations of a functional is independant of the others. As we
+# saw in the multi-core section, they do not have to be computed in a particular order so clearly,
+# a self referrential pattern won't be easy to do with a functional.
+# Here is an example of something called exponential smoothing:
+exps <- function(x, alpha) {
+  s <- numeric(length(x) + 1)
+  for (i in seq_along(s)) {
+    if (i == 1) {
+      s[i] <- x[i]
+    } else {
+      s[i] <- alpha * x[i] + (1 - alpha) * s[i - 1]
+    }
+  }
+  s
+}
+x <- runif(6)
+exps(x, 0.5)
+# Apparently this is a method of fitting a line to timeseries data. The reason it's recursive
+# is that we're kind of 'taking in yesterday's data' to fit today's. We're reminded that these
+# recurrance relations can sometimes be made explicit with some of those polynomial techniques
+# I learned and forgot about in discrete years ago
+
+# The last situation is when we don't know how many iterations will be required. This is
+# where we use while loops. Clearly functionals will not work in this case as they move across
+# a list, matrix, or other definite data structure.
+# Here's an example of simulating until we hit a value on one end of a distribution:
+i <- 0
+while(TRUE) {
+  if (runif(1) > 0.9) break
+  i <- i + 1
+}
+# but clearly we couldn't do this with a for loop without having a chance of never hitting
+
+##########
+## 11.7 ##
+##########
+# A family of functions
+
+# This last section is a case study on how to use functionals. The case study involves addition
+# but we'll move along to cummulative sums and summing across different structures
+# Here's the start:
+
+add <- function(x, y) {
+  stopifnot(length(x) == 1, length(y) == 1,
+            is.numeric(x), is.numeric(y))
+  x + y
+}
+
+# just as a side note, this stopifnot() function seems pretty nice. I often write long series
+# of tests to ensure the right input but this condenses the syntax. It doesn't seem to have options
+# on what error message to display but it does show you the first condition that was not met.
+
+# We'll also add this function to help deal with NA values. We have an identity parameter
+# that is the default if both x and y are NA
+rm_na <- function(x, y, identity) {
+  if (is.na(x) && is.na(y)) {
+    identity
+  } else if (is.na(x)) {
+    y
+  } else {
+    x
+  }
+}
+# So we could revise add to look like this:
+add <- function(x, y, na.rm = FALSE) {
+  if (na.rm && (is.na(x) || is.na(y))) rm_na(x, y, 0) else x + y
+}
+# although I feel like this should still have the protections against
+# arguments that are not numeric(1) but in any case we can see that the NA's are handled well:
+add(10, NA)
+add(10, NA, na.rm = TRUE)
+add(NA, NA)
+add(NA, NA, na.rm = TRUE)
+# The choice of identity = 0 seems pretty natural choice for identies in the case
+# of adding as it's literally the identity element in an abstract algebra sense.
+# This is actually kinda cool that we're seeing the development of something super basic in a
+# methodical way. The author points out that add(1,add(2,3)) looks a lot like reduce()
+add(1,add(2,3))
+Reduce(f = add, x = 1:3) # so perhaps we should make a version of this
+r_add <- function(xs, na.rm = TRUE) {
+  Reduce(function(x, y) add(x, y, na.rm = na.rm), xs)
+}
+r_add(1:3) # sweet but the author shows us these cases:
+r_add(NA, na.rm = TRUE)
+r_add(numeric())
+# and we're told that these are problematic because we would hope adding one NA with na.rm = TRUE
+# would return zero and the second one should not return NULL as every other input
+# generates numeric(1) or NA. THese problems are related to how reduce works. It's supposed
+# to return the input if we feed reduce only one element so maybe we can make the initial sum
+# zero with the init parameter
+r_add <- function(xs, na.rm = TRUE) {
+  Reduce(function(x, y) add(x, y, na.rm = na.rm), xs, init = 0)
+}
+# And now we have something that's very close to sum() but it might be nice to have a
+# vectorized version that can add two vectors elementwise. Here are two attempts:
+
+v_add1 <- function(x, y, na.rm = FALSE) {
+  stopifnot(length(x) == length(y), is.numeric(x), is.numeric(y))
+  if (length(x) == 0) return(numeric())
+  simplify2array(
+    Map(function(x, y) add(x, y, na.rm = na.rm), x, y)
+  )
+}
+
+v_add2 <- function(x, y, na.rm = FALSE) {
+  stopifnot(length(x) == length(y), is.numeric(x), is.numeric(y))
+  vapply(seq_along(x), function(i) add(x[i], y[i], na.rm = na.rm),
+         numeric(1))
+}
+# Personally I kinda prefer the map() version even though it's more verbose
+# There are also some versions of row sumSum and colSum
+
+# EXERCISES
+# 1. Implement smaller and larger functions that, given two inputs, return either the smaller or the larger value.
+# Implement na.rm = TRUE: what should the identity be? (Hint: smaller(x, smaller(NA, NA, na.rm = TRUE), na.rm = TRUE)
+# must be x, so smaller(NA, NA, na.rm = TRUE) must be bigger than any other value of x.) Use smaller and larger to
+# implement equivalents of min(), max(), pmin(), pmax(), and new functions row_min() and row_max().
+
+# okay we want the na.rm
+rm_na <- function(x, y, identity) {
+  if (is.na(x) && is.na(y)) {
+    identity
+  } else if (is.na(x)) {
+    y
+  } else {
+    x
+  }
+}
+
+larger <- function(x, y, na.rm = FALSE) {
+  if (na.rm && (is.na(x) || is.na(y))) rm_na(x, y, -Inf) else max(x,y)
+}
+larger(1,2)
+larger(NA,2)
+larger(NA,2,na.rm = TRUE)
+larger(NA,NA)
+
+smaller <- function(x, y, na.rm = FALSE) {
+  if (na.rm && (is.na(x) || is.na(y))) rm_na(x, y, Inf) else min(x,y)
+}
+smaller(1,2)
+smaller(NA,2)
+smaller(NA,2,na.rm = TRUE)
+smaller(NA,NA)
+smaller(1, smaller(NA, NA, na.rm = TRUE), na.rm = TRUE)
+Reduce(f = function(x,y){smaller(x,y, na.rm = TRUE)}, x = c(1:3,NA))
+
+# 2. Create a table that has and, or, add, multiply, smaller, and larger in the
+# columns and binary operator, reducing variant, vectorised variant, and array variants in the rows.
+# a. Fill in the cells with the names of base R functions that perform each of the roles.
+dat = c("&&", "||",  "+","*","min", "max","all","any", "sum", "prod", "min", "max", "&", "|", "+", "*", "pmin", "pmax", "", "", "", "", "", "")
+tab = matrix(dat,nrow = 4, ncol = 6, byrow = TRUE)
+colnames(tab) = c("and", "or", "add", "multiply", "smaller", "larger")
+rownames(tab) = c("binary op", "reducing variant", "vectorizsed variant", "array variant")
+# Interesting... admittadly i had to look at some solutions for this as I was unaware of pmin, pmax, prod, any, and all.
+# The solutions I found list && as the binary version and & as the vectorized version although & will work perfectly
+# fine on two logical(1)s. If I remember right, &&'s existence is only so that we can feed vectors and only check once
+# for performance reasons. I'm also not really sure about arrays as I have little experience with the >2d versions
+# From what I've seen of matrix operations,  the vectorised versions work just fine
+m1 = matrix(c(1,0,1,1), nrow = 2)
+m2 = matrix(c(0,0,1,0), nrow = 2)
+m1+m2
+m1*m2
+# note this is not the same as matrix multiplication
+m1 & m2
+m1 && m2
+# interesting so it just uses the [1,1] for the comparison
+pmin(m1,m2)
+pmax(m1,m2)
+# I'm guessing that max takes the highest value in either matrix?
+max(m1,m2)
+m3 = matrix(1:4,nrow =2)
+max(m1,m3)
+
+# b. Compare the names and arguments of the existing R functions. How consistent are they? How could you improve them?
+# I feel like the names are fairly easy to interpret and guess what the function does. I wouldn't have guessed
+# that the p in pmin stands for parallel but that makes sense. I don't really like the naming convention for na.rm
+# as the dot is supposed to signify a function of a class, not a space.
+
+# c. Complete the matrix by implementing any missing functions.
+
+# 3. How does paste() fit into this structure? What is the scalar binary function that underlies paste()?
+# paste definitely seems to have a reduce() like behavior where it combines strings with a binary operator
+# It appears to use cat().
+
+# What are the sep and collapse arguments to paste() equivalent to?
+# collapse is sort of like unlist() but it converts the atomic vector into character(1)
+# sep determines what character will seperate the values. It's sort of like
+f <- function(x, sep){
+  paste(x,sep)
+}
+
+# and then running reduce on this
+
+# Are there any paste variants that don’t have existing R implementations?
+paste(letters[1:3],letters[15:17])
+# seems like it's vectorized
+m1 = matrix(letters[1:4], nrow = 2)
+m2 = matrix(letters[5:8], nrow = 2)
+paste(m1,m2)
+# so this seems to flatten the output instead of keeping the array structure.
